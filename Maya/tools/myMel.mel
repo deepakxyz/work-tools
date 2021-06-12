@@ -1,0 +1,289 @@
+// All the mel command for the shelf tool
+global proc h(){
+    print("hi Selection Hirarchy \n");
+    print("i Import \n");
+    print("e Export \n");
+    print("ae Alembic Export Selection \n");
+    print("jo Comet Joint Orient \n");
+    print("rn Comet Rename \n");
+    print("se Script Editor \n");
+    print("cp Center Pivot \n");
+    print("l Space Locator \n");
+    print("ft Freeze Tranformation \n");
+    print("re Rename \n");
+    print("grp Group \n");
+    print("zo zot zor zos Zero Out \n");
+    print("snap Snap to the First selected object \n");
+    print("toCurve Convert a selected edge to Nurbs Curve \n");
+
+}
+
+// Select hierarchy
+global proc hi(){
+    select -hi;
+}
+
+// Import
+global proc i(){
+	Import;
+}
+
+// Export Selection 
+global proc e(){
+	ExportSelection;
+}
+
+// AlembicExportSelection
+global proc ae(){
+	AlembicExportSelection;
+}
+
+
+// Commet Joint Orient
+global proc jo(){
+    cometJointOrient;
+}
+
+
+// Commet Rename
+global proc rn(){
+    cometRename;
+}
+
+
+// Script Editor
+global proc se(){
+    ScriptEditor;
+}
+
+
+// Center Pivot
+global proc cp(){
+    CenterPivot;
+}
+
+
+// Space Locator
+global proc l(){
+    spaceLocator;
+}
+
+
+// Freeze Transform
+global proc ft(){
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+}
+
+
+// Command line renamer
+global proc re(string $argList){
+    // set default
+    int $suffix = false;
+    int $prefix = false;
+
+
+    string $argData[];
+
+
+    // Seprate space-delimited arguments into argument array
+    tokenize $argList " " $argData;
+
+
+    // delete the frist element to pass it into the switch
+    // stringArrayRemoveAtIndex(0, $argData);
+
+
+    for($arg in $argData){
+        switch ($arg){
+            case "-s":
+            $suffix = true;
+            break;
+            case "-p":
+            $prefix = true;
+            break;
+            
+            
+        }
+    }
+    
+
+
+    string $name = $argData[0];
+    string $prefix_value="";
+    string $suffix_value="";
+    
+    // configure the name
+    if($suffix){
+        // get suffix value
+        int $suffix_index = stringArrayFind("-s",0,$argData);
+        $suffix_value = "_" + $argData[$suffix_index +  1];
+    }
+    
+    if($prefix){
+        // get suffix value
+        int $prefix_index = stringArrayFind("-p",0,$argData);
+        $prefix_value = $argData[$prefix_index + 1] + "_";
+    }
+    
+    string $newName;
+    // Debug print
+    // print("name: " + $name + "\n");
+    // print("prefix: " + $prefix_value + "\n");
+    // print("suffix: " + $suffix_value + "\n");
+    
+    // get all the selection
+    string $selection[] = `ls -sl`;
+    int $i = 1;
+    for($object in $selection){
+        
+        if (size($selection)== 1){
+            $newName = $prefix_value + $name + $suffix_value;
+            rename $newName;
+        } else {
+            $newName = $prefix_value + $name + "_" + $i + $suffix_value;
+            rename $newName;
+            $i = $i + 1;
+        }
+    }
+}
+
+
+// Shorthand Group Command
+global proc grp (string $argList){
+    // set default
+    int $worldCenter = false;
+    
+    // argument list
+    string $argData[];
+    
+    // Seprate space-delimited arguments into argument array
+    tokenize $argList " " $argData;
+    
+    for ($arg in $argData){
+        switch ($arg){
+            // center pivot the group
+            case "-w":
+            $worldCenter = true;
+            break;
+        }
+    }
+    
+    string $name = $argData[0];
+
+
+    
+    // Center Pivot
+    if ($worldCenter){
+        doGroup 0 1 1;
+    } else{
+    // Group selection
+    group -n $name;
+    
+    }
+}
+
+///////////////////////////////////////////////////////////////
+
+// zero out translation
+global proc zot(){
+    // selection
+    string $selection[] = `ls -sl`;
+    for ($object in $selection){
+        // zero out the translation
+        setAttr ($object + ".translateX") 0;
+        setAttr ($object + ".translateY") 0;
+        setAttr ($object + ".translateZ") 0;
+    }
+}
+
+// zero out scale
+global proc zor(){
+    // selection
+    string $selection[] = `ls -sl`;
+    for ($object in $selection){
+        setAttr ($object + ".rotateX") 0;
+        setAttr ($object + ".rotateY") 0;
+        setAttr ($object + ".rotateZ") 0;
+    }
+}
+
+// zero out scale
+global proc zos(){
+    // selection
+    string $selection[] = `ls -sl`;
+    for ($object in $selection){
+        setAttr ($object + ".scaleX") 1;
+        setAttr ($object + ".scaleY") 1;
+        setAttr ($object + ".scaleZ") 1;
+    }
+}
+
+// zero out translation, rotation, scale
+global proc zo(){
+    zot;
+    zor;
+    zos;
+}
+
+
+global proc zoa(string $argList){
+    // set default
+    int $translation = false;
+    int $rotation = false;
+    int $scale = false;
+    
+    string $argData[];
+    
+    // seprate space-delimited aruguments into arguments array
+    tokenize $argList " " $argData;
+    
+    // change the default data from the argument
+    for ($arg in $argData){
+        switch ($arg){
+            case "-t":
+            $translation = true;
+            break;
+            case "-r":
+            $rotation = true;
+            break;
+            case "-s":
+            $scale = true;
+            break;
+        }
+    }
+    
+
+    // get all the seeltion object
+    string $selection[] = `ls -sl`;
+
+
+    if ($translation == true){
+        zot;
+    }
+    
+    if ($rotation == true){
+        zor;
+    }
+    
+    if ($scale == true){
+        zos;
+    }
+}
+
+/// snap to the first selected object
+global proc snap(){
+    string $selection[] = `ls -sl`;
+    string $snapTo = $selection[0];
+    stringArrayRemoveAtIndex(0, $selection);
+
+    for ($i in $selection){
+        delete `parentConstraint $snapTo $i`;
+
+    }
+}
+
+
+///Convert Edge to Curve
+global proc toCurve(){
+    polyToCurve -form 3- degree 3 -conformToSmoothMeshPreview 1;
+}
